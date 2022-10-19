@@ -1,0 +1,34 @@
+{
+    "name": "eugabrielsilva/sql-dumper",
+    "description": "SQL backup dumper made in pure PHP",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "sql",
+        "backup"
+    ],
+    "homepage": "https://eugabrielsilva.tk",
+    "support": {
+        "issues": "https://github.com/eugabrielsilva/sql-dumper/issues",
+        "source": "https://github.com/eugabrielsilva/sql-dumper"
+    },
+    "authors": [
+        {
+            "name": "Gabriel Silva",
+            "email": "contato@eugabrielsilva.tk",
+            "homepage": "https://eugabrielsilva.tk"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0",
+        "ext-mysqli": "*",
+        "ext-mbstring": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "GabrielSilva\\SQLDumper\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
