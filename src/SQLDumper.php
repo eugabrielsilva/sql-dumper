@@ -183,7 +183,7 @@ class SQLDumper
     private function generateDump()
     {
         // Check connection
-        if (!$this->connection instanceof mysqli) throw new Exception('SQLDumper: Database is not connected! Use connect() method first');
+        if (!$this->connection instanceof mysqli) $this->connect();
 
         // Prepare result
         $result = '-- ----------------------------------------------------------------------------' . "\n";
@@ -208,7 +208,7 @@ class SQLDumper
 
         // Get tables
         $tables = $this->query('SHOW TABLES');
-        $tables = array_column($tables, 'Tables_in_' . $this->db);
+        $tables = array_column($tables ?? [], 'Tables_in_' . $this->db);
 
         if (!empty($tables)) {
             foreach ($tables as $table) {
