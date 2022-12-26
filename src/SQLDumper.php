@@ -129,6 +129,12 @@ class SQLDumper
     public bool $safeMode = true;
 
     /**
+     * Number of rows to fetch per query. Use this to improve performance on large tables.\
+     * Default: `3000`
+     */
+    public int $chunkSize = 3000;
+
+    /**
      * The connection instance.
      * @var mysqli|null
      */
@@ -237,35 +243,44 @@ class SQLDumper
 
                 // Get data
                 if (!$this->insertData) continue;
-                $data = $this->query('SELECT * FROM `' . $table . '`', true);
+                $chunks = $this->countDataChunks($table);
+                if (empty($chunks)) continue;
 
-                if (!empty($data)) {
-                    // Insert DELETE statement
-                    if ($this->deleteData) $result .= "-- Deleting data from $table\nTRUNCATE TABLE `$table`;\n\n";
+                // Insert DELETE statement
+                if ($this->deleteData) $result .= "-- Deleting data from $table\nTRUNCATE TABLE `$table`;\n\n";
 
-                    // Get columns
-                    $columns = array_keys($data[0]);
+                // Create INSERT statement
+                $result .= "-- Inserting data into $table\n";
 
-                    // Create INSERT statement
-                    $result .= "-- Inserting data into $table\n";
-                    $result .= $this->insertType . ' INTO `' . $table . '` (`' . implode('`, `', $columns) . "`) VALUES";
+                // Loop through each chunk
+                for ($i = 0; $i < $chunks; $i++) {
 
-                    // Parse values
-                    foreach ($data as $row) {
-                        $value = '  (';
-                        foreach ($row as $item) {
-                            if (is_null($item)) {
-                                $value .= 'NULL, ';
-                            } else {
-                                $value .= "'" . $this->connection->escape_string((string)$item) . "', ";
+                    // Get data from chunk
+                    $data = $this->query('SELECT * FROM `' . $table . '` LIMIT ' . ($i * $this->chunkSize) . ', ' . $this->chunkSize, true);
+
+                    if (!empty($data)) {
+
+                        // Get columns
+                        $columns = array_keys($data[0]);
+                        $result .= $this->insertType . ' INTO `' . $table . '` (`' . implode('`, `', $columns) . "`) VALUES";
+
+                        // Parse values
+                        foreach ($data as $row) {
+                            $value = '  (';
+                            foreach ($row as $item) {
+                                if (is_null($item)) {
+                                    $value .= 'NULL, ';
+                                } else {
+                                    $value .= "'" . $this->connection->escape_string((string)$item) . "', ";
+                                }
                             }
+                            $value = rtrim($value, ', )') . '), ';
+                            $result .= "\n" . $value;
                         }
-                        $value = rtrim($value, ', )') . '), ';
-                        $result .= "\n" . $value;
-                    }
 
-                    $result = rtrim($result, ', ');
-                    $result .= ";\n\n";
+                        $result = rtrim($result, ', ');
+                        $result .= ";\n\n";
+                    }
                 }
             }
         }
@@ -277,6 +292,20 @@ class SQLDumper
         $result .= '/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;' . "\n";
         $result .= '/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;';
         return $result;
+    }
+
+    /**
+     * Counts the amount of chunks needed per table.
+     * @param string $table Table name to count rows.
+     * @return int Returns the number of data chunks.
+     */
+    private function countDataChunks(string $table)
+    {
+        $totalResults = (int)($this->query("SELECT COUNT(*) AS count FROM `{$table}`")[0]['count'] ?? 0);
+        if ($totalResults == 0) return 0;
+        $totalChunks = floor($totalResults / $this->chunkSize);
+        if ($totalResults % $this->chunkSize != 0) $totalChunks++;
+        return $totalChunks;
     }
 
     /**

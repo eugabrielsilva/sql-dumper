@@ -62,6 +62,7 @@ $db->insertData = true; // Include data in dump
 $db->deleteData = false; // Delete data from table before inserting
 $db->insertType = 'INSERT'; // Insert type: INSERT, INSERT IGNORE or REPLACE
 $db->safeMode = true; // Use IF EXISTS and IF NOT EXISTS clauses in dump
+$db->chunkSize = 3000; // Number of rows to fetch per query (useful in large tables)
 ```
 
 **Important!** If you change any of the server options, like `host`, `user`, `password`, `db`, `port` or `charset`, you need to refresh the database connection using `$db->connect()` method.
